@@ -8,7 +8,7 @@
       <div class="itxst">
         <div class="group">
           <draggable
-            :list="state.modules.moddelDatas"
+            :list="moddelDatas"
             ghost-class="ghost"
             handle=".move"
             filter=".forbid"
@@ -38,17 +38,9 @@
     <t-layout class="contentArea">
       <t-divider align="left" theme="vertical">UI 设计区域</t-divider>
       <t-content>
-        <div class="group">
-          <t-input
-            v-moodel="input"
-            placeholder="请输入内容（有默认值）"
-            @enter="onEnter"
-            @change="onChange"
-          />
-
-          <t-button>确定</t-button>
-          <!-- <draggable
-            :list="state.modules.dragDatas"
+        <div class="dragDatasShowArea">
+          <draggable
+            :list="dragDatas"
             ghost-class="ghost"
             chosen-class="chosenClass"
             animation="300"
@@ -58,27 +50,36 @@
             :start="dragItem"
             :add="addItem"
             :forceFallback="true"
+            class="showArea"
           >
             <template #item="{ element }">
               <div class="item move">
-                <label class="move">{{ element.name }}</label>
-                <span>内容....</span>
-                <t-input
-                  v-moodel="input"
-                  placeholder="请输入内容（有默认值）"
-                  @enter="onEnter"
-                  @change="onChange"
-                />
+                <label class="type-name">组件类型：{{ element.name }}</label>
+                <t-space direction="vertical" breakLine>
+                  <div class="text" v-if="element.type === TYPE_MODEL.TEXT">
+                    {{ element.labelName }}
+                  </div>
+                  <t-input
+                    v-moodel="input"
+                    v-if="element.type === TYPE_MODEL.INPUT"
+                    placeholder="请输入内容（有默认值）"
+                    @enter="onEnter"
+                    @change="onChange"
+                  />
+                </t-space>
               </div>
             </template>
-          </draggable> -->
+          </draggable>
         </div>
       </t-content>
     </t-layout>
 
     <t-aside class="rightAside">
       <t-divider align="left" theme="vertical">属性编辑区</t-divider>
-      <t-form labelAlign="top" requiredMark colon submitWithWarningMessage>
+      <keep-alive>
+        <component :is="currentComponent"></component>
+      </keep-alive>
+      <!-- <t-form labelAlign="top" requiredMark colon submitWithWarningMessage>
         <t-form-item label="名称" name="name" initial-data="TDesign">
           <t-input placeholder="请输入内容" />
         </t-form-item>
@@ -91,7 +92,7 @@
             <t-checkbox value="2">否</t-checkbox>
           </t-checkbox-group>
         </t-form-item>
-      </t-form>
+      </t-form> -->
     </t-aside>
   </t-layout>
 </template>
@@ -99,7 +100,10 @@
   
   
 <script setup lang="tsx">
-import { ref, reactive } from "vue";
+import { ref, reactive, markRaw } from "vue";
+import TextAttributeDesign from '@/components/TextAttributeDesign.vue'
+import InputAttributeDesign from '@/components/InputAttributeDesign.vue'
+import ImageAttributeDesign from '@/components/ImageAttributeDesign.vue'
 //导入draggable组件
 import draggable from "vuedraggable";
 enum TYPE_MODEL {
@@ -107,21 +111,36 @@ enum TYPE_MODEL {
   'INPUT' =  2,
   'BUTTON' =  3,
   'AVATOR' =  4,
+  'IMAGE' = 5,
 }
 interface DrageItem {
   name: string,
   type: number,
   icon: string,
-  id?: number
+  id?: number,
+  labelName?: string,
 }
-
+const moddelDatas = ref([
+  { name: "文本", type: TYPE_MODEL.TEXT, icon: "call", group: 'A', com:markRaw(TextAttributeDesign) },
+  { name: "输入框", type: TYPE_MODEL.INPUT, icon: "chat", group: 'A', com:markRaw(InputAttributeDesign) },
+  { name: "按钮", type: TYPE_MODEL.BUTTON, icon: "filter", group: 'A' },
+  { name: "头像", type: TYPE_MODEL.AVATOR, icon: "file-excel", group: 'A' },
+  { name: "图片", type: TYPE_MODEL.IMAGE, icon: "file-excel", group: 'A', com:markRaw(ImageAttributeDesign) },
+])
+const dragDatas = ref([
+  { name: "按钮", type: TYPE_MODEL.BUTTON, icon: "filter", group: 'A' },
+])
+let currentIndex = ref(0);
+let currentComponent = reactive({
+  com: moddelDatas.value[currentIndex.value].com
+})
 const state = reactive({
   message: "A组只能往B组拖到一个元素",
   groupA: {
     name: "itxst",
     put: true, //允许拖入
     pull: () => {
-      let res = state.modules.moddelDatas.length > 3;
+      let res = moddelDatas.value.length > 3;
       //当A组元素小于等于3个时，不允许再拖出元素了
       state.message = res ? "只能拖出1个" : "不能再拖了";
       return res;
@@ -131,19 +150,10 @@ const state = reactive({
     name: "itxst",
     put: false, // 不允许拖入
     pull: false,
-  },
-  modules: {
-    moddelDatas: [
-      { name: "文本", type: TYPE_MODEL.TEXT, icon: "call" },
-      { name: "输入框", type: TYPE_MODEL.INPUT, icon: "chat" },
-      { name: "按钮", type: TYPE_MODEL.BUTTON, icon: "filter" },
-      { name: "头像", type: TYPE_MODEL.AVATOR, icon: "file-excel" },
-    ],
-    dragDatas: [
-      { name: "文本", type: TYPE_MODEL.TEXT, icon: "call", id: 123 }
-    ],
-  },
+  }
 });
+
+
 
 //拖拽开始的事件
 const onStart = () => {
@@ -156,7 +166,7 @@ const onEnd = (e) => {
   const { newDraggableIndex } = e;
 
   // if(state.modules.moddelDatas[newDraggableIndex]){
-    createModelNode(state.modules.moddelDatas[newDraggableIndex])
+    createModelNode(moddelDatas.value[newDraggableIndex])
   // }
 
 };
@@ -194,12 +204,20 @@ const createModelNode = (data: DrageItem) => {
   const { type } = data;
   switch (type) {
     case TYPE_MODEL.TEXT:
+      dragDatas.value.push({
+        ...data,
+        id,
+        labelName: '',
+      })
+      currentIndex.value = dragDatas.value.length--;
       break;
     case TYPE_MODEL.INPUT:
-      state.modules.dragDatas.push({
+      dragDatas.value.push({
         ...data,
-        id
+        id,
+        labelName: ''
       })
+      currentIndex.value = dragDatas.value.length--;
       break;
     case TYPE_MODEL.BUTTON:
       break;
@@ -208,7 +226,7 @@ const createModelNode = (data: DrageItem) => {
     default:
       break;
   }
-  console.log("state.modules.dragDatas", state.modules)
+  console.log("state.modules.dragDatas", dragDatas.value,moddelDatas.value)
 };
 </script>
 <style lang="scss">
@@ -235,6 +253,11 @@ const createModelNode = (data: DrageItem) => {
       height: 100%;
       .uiDesignView {
         height: 100%;
+      }
+    }
+    .dragDatasShowArea {
+      .showArea {
+        text-align: left;
       }
     }
   }
