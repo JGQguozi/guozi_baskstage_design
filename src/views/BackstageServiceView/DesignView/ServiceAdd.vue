@@ -133,7 +133,7 @@ const dragDatas = ref<Array<DrageItem>>([
 ])
 let currentIndex = ref<number>(0);
 let currentComponent = reactive({
-  com: moddelDatas.value[currentIndex.value].com
+  com: moddelDatas.value[0].com
 })
 const state = reactive({
   message: "A组只能往B组拖到一个元素",
@@ -208,7 +208,7 @@ const createModelNode = (data, index: number) => {
     case TYPE_MODEL.TEXT:
     case TYPE_MODEL.INPUT:
       dragDatas.value.push({
-        ...data.value[index],
+        ...targetObject,
         id,
         labelName: '',
       })
