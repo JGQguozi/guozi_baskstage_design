@@ -100,7 +100,7 @@
   
   
 <script setup lang="tsx">
-import { ref, reactive, markRaw } from "vue";
+import { ref, reactive, markRaw, Ref } from "vue";
 import TextAttributeDesign from '@/components/TextAttributeDesign.vue'
 import InputAttributeDesign from '@/components/InputAttributeDesign.vue'
 import ImageAttributeDesign from '@/components/ImageAttributeDesign.vue'
@@ -114,11 +114,12 @@ enum TYPE_MODEL {
   'IMAGE' = 5,
 }
 interface DrageItem {
-  name: string,
-  type: number,
-  icon: string,
-  id?: number,
-  labelName?: string,
+  name: string;
+  type: number;
+  icon: string;
+  group: string;
+  id?: string;
+  labelName?: string;
 }
 const moddelDatas = ref([
   { name: "文本", type: TYPE_MODEL.TEXT, icon: "call", group: 'A', com:markRaw(TextAttributeDesign) },
@@ -127,7 +128,7 @@ const moddelDatas = ref([
   { name: "头像", type: TYPE_MODEL.AVATOR, icon: "file-excel", group: 'A' },
   { name: "图片", type: TYPE_MODEL.IMAGE, icon: "file-excel", group: 'A', com:markRaw(ImageAttributeDesign) },
 ])
-const dragDatas = ref([
+const dragDatas:Ref<DrageItem[]> = ref([
   { name: "头像", type: TYPE_MODEL.AVATOR, icon: "file-excel", group: 'A' },
 ])
 let currentIndex = ref(0);
@@ -166,7 +167,7 @@ const onEnd = (e) => {
   const { newDraggableIndex } = e;
 
   // if(state.modules.moddelDatas[newDraggableIndex]){
-    createModelNode(moddelDatas.value[newDraggableIndex])
+    createModelNode(moddelDatas, newDraggableIndex)
   // }
 
 };
@@ -194,14 +195,15 @@ const onChange = (val) => {
 };
 // 生成唯一id
 const createId = () => {
-  const value = Math.random().toString(16).slice(2);  
-	return Number(value);
+  const valueFun = () => Math.random().toString(16).slice(2);  
+  if(typeof valueFun() != 'string') return '1122334455'
+	return valueFun();
 }
 // 创建模型
-const createModelNode = (data: DrageItem) => {
-  console.log("创建模型", data);
+const createModelNode = (data, index: number) => {
   const id = createId()
-  const { type } = data;
+  const { type } = data.value[index];
+  console.log("创建模型", data.value, index, id, type);
   switch (type) {
     case TYPE_MODEL.TEXT:
       dragDatas.value.push({
@@ -211,11 +213,16 @@ const createModelNode = (data: DrageItem) => {
       })
       break;
     case TYPE_MODEL.INPUT:
-      dragDatas.value.push({
-        ...data,
+      // dragDatas.value.push({
+      //   ...data,
+      //   id,
+      //   labelName: ''
+      // })
+      dragDatas.value = [{
+        ...data.value[index],
         id,
         labelName: ''
-      })
+      }]
       currentIndex.value = dragDatas.value.length--;
       break;
     case TYPE_MODEL.BUTTON:
