@@ -13,6 +13,7 @@
     "eft-taro-ui": "^0.5.13",
     "lib-flexible": "^0.3.2",
     "lib-flexible-computer": "^1.0.2",
+    "lodash": "^4.17.21",
     "postcss-plugin-px2rem": "^0.8.1",
     "postcss-px2rem": "^0.3.0",
     "px2rem-loader": "^0.1.9",

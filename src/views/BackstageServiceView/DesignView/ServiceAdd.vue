@@ -22,7 +22,7 @@
             :fallback-on-body="true"
             :touch-start-threshold="50"
             :fallback-tolerance="50"
-            :move="onMove"
+            @move="onMove"
             :sort="false"
           >
             <template #item="{ element }">
@@ -44,11 +44,10 @@
             ghost-class="ghost"
             chosen-class="chosenClass"
             animation="300"
-            :group="itxst"
-            :move="onMove"
-            :sort="false"
-            :start="dragItem"
-            :add="addItem"
+            :group="state.groupB"
+            @move="onMove"
+            :sort="true"
+            @add="addItem"
             :forceFallback="true"
             class="showArea"
           >
@@ -104,6 +103,7 @@ import { ref, reactive, markRaw, Ref } from "vue";
 import TextAttributeDesign from '@/components/TextAttributeDesign.vue'
 import InputAttributeDesign from '@/components/InputAttributeDesign.vue'
 import ImageAttributeDesign from '@/components/ImageAttributeDesign.vue'
+import _ from 'lodash'
 //导入draggable组件
 import draggable from "vuedraggable";
 enum TYPE_MODEL {
@@ -128,10 +128,10 @@ const moddelDatas = ref([
   { name: "头像", type: TYPE_MODEL.AVATOR, icon: "file-excel", group: 'A' },
   { name: "图片", type: TYPE_MODEL.IMAGE, icon: "file-excel", group: 'A', com:markRaw(ImageAttributeDesign) },
 ])
-const dragDatas:Ref<DrageItem[]> = ref([
-  { name: "头像", type: TYPE_MODEL.AVATOR, icon: "file-excel", group: 'A' },
+const dragDatas = ref<Array<DrageItem>>([
+  // { name: "头像", type: TYPE_MODEL.AVATOR, icon: "file-excel", group: 'A' },
 ])
-let currentIndex = ref(0);
+let currentIndex = ref<number>(0);
 let currentComponent = reactive({
   com: moddelDatas.value[currentIndex.value].com
 })
@@ -139,7 +139,7 @@ const state = reactive({
   message: "A组只能往B组拖到一个元素",
   groupA: {
     name: "itxst",
-    put: true, //允许拖入
+    put: false, //允许拖入
     pull: () => {
       let res = moddelDatas.value.length > 3;
       //当A组元素小于等于3个时，不允许再拖出元素了
@@ -149,7 +149,7 @@ const state = reactive({
   },
   groupB: {
     name: "itxst",
-    put: false, // 不允许拖入
+    put: true, // 不允许拖入
     pull: false,
   }
 });
@@ -166,9 +166,8 @@ const onEnd = (e) => {
   console.log("结束拖拽", e);
   const { newDraggableIndex } = e;
 
-  // if(state.modules.moddelDatas[newDraggableIndex]){
-    createModelNode(moddelDatas, newDraggableIndex)
-  // }
+  createModelNode(_.cloneDeep(moddelDatas), newDraggableIndex)
+
 
 };
 
@@ -201,28 +200,18 @@ const createId = () => {
 }
 // 创建模型
 const createModelNode = (data, index: number) => {
-  const id = createId()
-  const { type } = data.value[index];
-  console.log("创建模型", data.value, index, id, type);
+  const id = createId();
+  const targetObject = _.cloneDeep(data.value[index]) || {};
+  const { type } = targetObject;
+  console.log("创建模型", targetObject, index, type);
   switch (type) {
     case TYPE_MODEL.TEXT:
+    case TYPE_MODEL.INPUT:
       dragDatas.value.push({
-        ...data,
+        ...data.value[index],
         id,
         labelName: '',
       })
-      break;
-    case TYPE_MODEL.INPUT:
-      // dragDatas.value.push({
-      //   ...data,
-      //   id,
-      //   labelName: ''
-      // })
-      dragDatas.value = [{
-        ...data.value[index],
-        id,
-        labelName: ''
-      }]
       currentIndex.value = dragDatas.value.length--;
       break;
     case TYPE_MODEL.BUTTON:
